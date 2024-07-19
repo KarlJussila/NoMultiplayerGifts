@@ -1,0 +1,10 @@
+{
+  "Name": "NoMultiplayerGifts",
+  "Author": "Karl Jussila",
+  "Version": "1.0.0",
+  "Description": "Just a mod to get rid of the \"offer item\" prompt when interacting with other players in multiplayer",
+  "UniqueID": "KarlJussila.NoMultiplayerGifts",
+  "EntryDll": "NoMultiplayerGifts.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": []
+}

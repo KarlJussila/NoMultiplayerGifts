@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Reflection.Emit;
+using System.Reflection;
 using HarmonyLib;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
@@ -18,25 +20,44 @@ namespace NoMultiplayerGifts
         /// <param name="helper">Provides simplified APIs for writing mods.</param>
         public override void Entry(IModHelper helper)
         {
-            helper.Events.Input.ButtonPressed += this.OnButtonPressed;
             var harmony = new Harmony(this.ModManifest.UniqueID);
+
+            harmony.Patch(
+                original: AccessTools.Method(typeof(Farmer), nameof(Farmer.checkAction)),
+                transpiler: new HarmonyMethod(typeof(ModEntry), nameof(offerItem_Transpiler))
+            );
         }
 
-
-        /*********
-        ** Private methods
-        *********/
-        /// <summary>Raised after the player presses a button on the keyboard, controller, or mouse.</summary>
-        /// <param name="sender">The event sender.</param>
-        /// <param name="e">The event data.</param>
-        private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
+        public static IEnumerable<CodeInstruction> offerItem_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            // ignore if player hasn't loaded a save yet
-            if (!Context.IsWorldReady)
-                return;
+            CodeMatcher matcher = new(instructions);
+            MethodInfo canBeGivenAsGift = AccessTools.PropertyGetter(typeof(Item), nameof(Item.canBeGivenAsGift));
+            MethodInfo getHasValue = AccessTools.PropertyGetter(typeof(Nullable<bool>), nameof(Nullable<bool>.HasValue));
+            MethodInfo getValueOrDefault = AccessTools.PropertyGetter(typeof(Nullable<bool>), nameof(Nullable<bool>.GetValueOrDefault));
 
-            // print button presses to the console window
-            this.Monitor.Log($"{Game1.player.Name} pressed {e.Button}.", LogLevel.Debug);
+            MethodInfo modifyInfo = AccessTools.Method(typeof(ModEntry), nameof(ModifyCanBeGivenAsGiftValueOnStack));
+
+            matcher.MatchEndForward(
+                new CodeMatch(OpCodes.Callvirt, canBeGivenAsGift),
+                new CodeMatch(OpCodes.Newobj),
+                new CodeMatch(OpCodes.Stloc_S, 4),
+                new CodeMatch(OpCodes.Ldloca_S, 4),
+                new CodeMatch(OpCodes.Call, getHasValue),
+                new CodeMatch(OpCodes.Brfalse),
+                new CodeMatch(OpCodes.Ldloca_S, 4),
+                new CodeMatch(OpCodes.Call, getValueOrDefault)
+                )
+                .ThrowIfNotMatch($"Could not find entry point for {nameof(offerItem_Transpiler)}")
+                .Insert(
+                    new CodeInstruction(OpCodes.Call, modifyInfo)
+                );
+
+            return matcher.InstructionEnumeration();
+        }
+
+        public static bool ModifyCanBeGivenAsGiftValueOnStack(bool canBeGivenAsGift)
+        {
+            return canBeGivenAsGift && false;
         }
     }
 }

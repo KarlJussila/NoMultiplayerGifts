@@ -20,7 +20,7 @@ namespace NoMultiplayerGifts
         /// <param name="helper">Provides simplified APIs for writing mods.</param>
         public override void Entry(IModHelper helper)
         {
-            var harmony = new Harmony(this.ModManifest.UniqueID);
+            Harmony harmony = new(ModManifest.UniqueID);
 
             harmony.Patch(
                 original: AccessTools.Method(typeof(Farmer), nameof(Farmer.checkAction)),
@@ -35,29 +35,23 @@ namespace NoMultiplayerGifts
             MethodInfo getHasValue = AccessTools.PropertyGetter(typeof(Nullable<bool>), nameof(Nullable<bool>.HasValue));
             MethodInfo getValueOrDefault = AccessTools.PropertyGetter(typeof(Nullable<bool>), nameof(Nullable<bool>.GetValueOrDefault));
 
-            MethodInfo modifyInfo = AccessTools.Method(typeof(ModEntry), nameof(ModifyCanBeGivenAsGiftValueOnStack));
-
             matcher.MatchEndForward(
                 new CodeMatch(OpCodes.Callvirt, canBeGivenAsGift),
                 new CodeMatch(OpCodes.Newobj),
-                new CodeMatch(OpCodes.Stloc_S, 4),
-                new CodeMatch(OpCodes.Ldloca_S, 4),
+                new CodeMatch(OpCodes.Stloc_S),
+                new CodeMatch(OpCodes.Ldloca_S),
                 new CodeMatch(OpCodes.Call, getHasValue),
                 new CodeMatch(OpCodes.Brfalse),
-                new CodeMatch(OpCodes.Ldloca_S, 4),
+                new CodeMatch(OpCodes.Ldloca_S),
                 new CodeMatch(OpCodes.Call, getValueOrDefault)
                 )
                 .ThrowIfNotMatch($"Could not find entry point for {nameof(offerItem_Transpiler)}")
                 .Insert(
-                    new CodeInstruction(OpCodes.Call, modifyInfo)
+                    new CodeInstruction(OpCodes.Ldc_I4_0),
+                    new CodeInstruction(OpCodes.And)
                 );
 
             return matcher.InstructionEnumeration();
-        }
-
-        public static bool ModifyCanBeGivenAsGiftValueOnStack(bool canBeGivenAsGift)
-        {
-            return canBeGivenAsGift && false;
         }
     }
 }

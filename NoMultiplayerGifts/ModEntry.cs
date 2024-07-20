@@ -35,6 +35,8 @@ namespace NoMultiplayerGifts
             MethodInfo getHasValue = AccessTools.PropertyGetter(typeof(Nullable<bool>), nameof(Nullable<bool>.HasValue));
             MethodInfo getValueOrDefault = AccessTools.PropertyGetter(typeof(Nullable<bool>), nameof(Nullable<bool>.GetValueOrDefault));
 
+            MethodInfo modifyInfo = AccessTools.Method(typeof(ModEntry), nameof(ModifyCanBeGivenAsGiftValueOnStack));
+
             matcher.MatchEndForward(
                 new CodeMatch(OpCodes.Callvirt, canBeGivenAsGift),
                 new CodeMatch(OpCodes.Newobj),
@@ -46,12 +48,17 @@ namespace NoMultiplayerGifts
                 new CodeMatch(OpCodes.Call, getValueOrDefault)
                 )
                 .ThrowIfNotMatch($"Could not find entry point for {nameof(offerItem_Transpiler)}")
+                .Advance(1)
                 .Insert(
-                    new CodeInstruction(OpCodes.Ldc_I4_0),
-                    new CodeInstruction(OpCodes.And)
+                    new CodeInstruction(OpCodes.Call, modifyInfo)
                 );
 
             return matcher.InstructionEnumeration();
+        }
+
+        public static bool ModifyCanBeGivenAsGiftValueOnStack(bool canBeGivenAsGift)
+        {
+            return canBeGivenAsGift && false;
         }
     }
 }

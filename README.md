@@ -1,0 +1,2 @@
+# NoMultiplayerGifts
+A Stardew Valley mod that does one thing: disables gifting items to other players in a multiplayer game. Ever gone to Skull Cavern with a friend? Ever tried to heal only to hand your friend a piece of sashimi with your dying breath? Well no longer! With NoMultiplayerGifts, you can gobble as much sashimi as you want while your friend desperately tries to ward off the flying snakes.
